@@ -40,13 +40,7 @@ func sortByTime(a, b fs.FileInfo) bool {
 	}
 }
 
-func getDir(path string, sortby, direction int) ([]fs.FileInfo, error) {
-	absPath, err := filepath.Abs(filepath.Dir(path))
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("pwd:", absPath)
+func Dir(path string, sortby, direction int) ([]fs.FileInfo, error) {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil, err
@@ -82,9 +76,24 @@ func getDir(path string, sortby, direction int) ([]fs.FileInfo, error) {
 func main() {
 	var err error
 	var files []fs.FileInfo = []fs.FileInfo{}
-	// files, err = getDir("../", NOTSORT, ASC)
-	files, err = getDir("../", NAME, ASC)
-	// files, err = getDir("../", NAME, DESC)
+
+	path := "../go.mod"
+
+	dir := filepath.Dir(path)
+	absPath, err := filepath.Abs(dir)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("pwd:", absPath)
+
+	if path != dir {
+		panic("path is not dir")
+	}
+
+	// files, err = Dir(path, NOTSORT, ASC)
+	files, err = Dir(path, NAME, ASC)
+	// files, err = Dir(path, NAME, DESC)
 
 	if err != nil {
 		panic(err)
@@ -93,4 +102,11 @@ func main() {
 	for _, file := range files {
 		fmt.Println(file.Name(), file.IsDir())
 	}
+
+	// dlist, err := json.Marshal(files)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// log.Println(string(dlist))
 }

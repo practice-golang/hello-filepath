@@ -4,11 +4,37 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/labstack/echo/v4"
+
+	"gopkg.in/guregu/null.v4"
 )
+
+type FilePath struct {
+	Path  null.String `json:"path"`
+	Sort  null.String `json:"sort"`
+	Order null.String `json:"order"`
+}
+
+type FileInfo struct {
+	Name     null.String `json:"name"`
+	Type     null.String `json:"type"`
+	Size     null.Int    `json:"size"`
+	DateTime null.String `json:"datetime"`
+	DTTM     null.String `json:"dttm"`
+	IsDir    null.Bool   `json:"isdir"`
+}
+
+type FileList struct {
+	Path     null.String `json:"path"`
+	FullPath null.String `json:"full-path"`
+	Files    []FileInfo  `json:"files"`
+}
 
 const (
 	_       = iota
@@ -112,14 +138,18 @@ func Dir(path string, sortby, direction int) ([]fs.FileInfo, error) {
 	return files, nil
 }
 
-func main() {
+func GetDirectoryList(path string, target, order int) (FileList, error) {
 	var err error
 	var files []fs.FileInfo = []fs.FileInfo{}
 
-	// path := "../go.mod"
-	// path := "../"
-	path := "../"
+	result := FileList{
+		Path:     null.StringFrom(path),
+		FullPath: null.StringFrom(""),
+		Files:    []FileInfo{},
+	}
+
 	// path, _ := os.Getwd()
+	// path := "../"
 
 	p, _ := os.Stat(path)
 	dir := path
@@ -130,34 +160,56 @@ func main() {
 	dir = filepath.Dir(dir)
 	absPath, err := filepath.Abs(dir)
 	if err != nil {
-		panic(err)
+		return result, err
 	}
 
-	fmt.Println("pwd:", absPath, path[:len(path)-1], dir)
+	result.FullPath = null.StringFrom(absPath)
 
-	// if path != dir {
-	// 	panic("path is not dir")
-	// }
-
-	// files, err = Dir(absPath, NOTSORT, ASC)
-	files, err = Dir(absPath, NAME, ASC)
-	// files, err = Dir(absPath, NAME, DESC)
-	// files, err = Dir(absPath, TYPE, DESC)
-	// files, err = Dir(absPath, SIZE, ASC)
-	// files, err = Dir(absPath, SIZE, DESC)
+	files, err = Dir(absPath, target, order)
 
 	if err != nil {
-		panic(err)
+		return result, err
 	}
 
 	for _, file := range files {
-		fmt.Println(file.Name(), filepath.Ext(file.Name()), file.ModTime().Format("2006-01-02 15:04:05"), file.IsDir())
+		ext := filepath.Ext(file.Name())
+		if len(ext) > 0 {
+			ext = ext[1:]
+		}
+		fileInfo := FileInfo{
+			Name:     null.StringFrom(file.Name()),
+			Type:     null.StringFrom(ext),
+			Size:     null.IntFrom(file.Size()),
+			DateTime: null.StringFrom(file.ModTime().Format("2006-01-02 15:04:05")),
+			DTTM:     null.StringFrom(file.ModTime().Format("20060102150405")),
+			IsDir:    null.BoolFrom(file.IsDir()),
+		}
+
+		result.Files = append(result.Files, fileInfo)
 	}
 
-	// dlist, err := json.Marshal(files)
+	return result, nil
+}
+
+func DirectoryList(c echo.Context) error {
+	// fList, err := GetDirectoryList("..", NAME, DESC)
+	// fList, err := GetDirectoryList("..", TYPE, ASC)
+	// fList, err := GetDirectoryList("..", SIZE, ASC)
+	fList, err := GetDirectoryList("..", NAME, ASC)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// fileListJSON, err := json.Marshal(flist)
 	// if err != nil {
-	// 	panic(err)
+	// 	return nil, err
 	// }
 
-	// log.Println(string(dlist))
+	return c.JSON(http.StatusOK, fList)
+}
+
+func main() {
+	e := echo.New()
+	e.GET("/dir-list", DirectoryList)
+	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 }

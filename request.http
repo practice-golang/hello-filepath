@@ -1,0 +1,4 @@
+@uri=http://localhost:1323
+
+### Get directory list
+GET {{uri}}/dir-list HTTP/1.1

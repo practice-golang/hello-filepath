@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 
 	"gopkg.in/guregu/null.v4"
 )
@@ -200,16 +201,13 @@ func DirectoryList(c echo.Context) error {
 		fmt.Println(err)
 	}
 
-	// fileListJSON, err := json.Marshal(flist)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	return c.JSON(http.StatusOK, fList)
 }
 
 func main() {
 	e := echo.New()
+	e.Use(middleware.CORS())
+
 	e.GET("/dir-list", DirectoryList)
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 }

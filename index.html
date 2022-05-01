@@ -1,13 +1,42 @@
 <html>
-    <head>
 
-    </head>
+<head>
 
-    <body>
+</head>
 
-    </body>
+<body>
+    <button onclick="getDirectoryList()">Get directory list</button>
 
-    <script>
-        
-    </script>
+    <div id="current-path"></div>
+    <div id="directories"></div>
+    <div id="files"></div>
+</body>
+
+<script>
+    async function getDirectoryList() {
+        const uri = "http://localhost:1323"
+        const path = "/dir-list"
+        let dirData
+
+        const r = await fetch(uri + path)
+        if (r.ok) {
+            const data = await r.json()
+
+            const currentPath = document.getElementById("current-path")
+            currentPath.innerHTML = data["full-path"]
+
+            const files = document.getElementById("files")
+            for (const file of data.files) {
+                const p = document.createElement("p")
+                p.innerText = file.name + " / " + file.type + " / " + file.size + " / " + file.datetime
+                files.appendChild(p)
+            }
+
+            dirData = data
+        } else {
+            console.log("Error: " + r.status)
+        }
+    }
+</script>
+
 </html>

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -153,8 +152,6 @@ func GetDirectoryList(path string, target, order int) (FileList, error) {
 		FullPath: null.StringFrom(""),
 		Files:    []FileInfo{},
 	}
-
-	log.Println(path)
 
 	// path, _ := os.Getwd()
 	// path := "../"

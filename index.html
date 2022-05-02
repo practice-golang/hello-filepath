@@ -8,17 +8,29 @@
     <button onclick="getDirectoryList()">Get directory list</button>
 
     <div id="current-path"></div>
-    <div id="directories"></div>
-    <div id="files"></div>
+    <div id="dir-container">
+        <div id="directories">
+            <p>a</p>
+            <p>a</p>
+            <p>a</p>
+            <p>a</p>
+        </div>
+        <div id="files"></div>
+    </div>
+
 </body>
 
 <script>
-    async function getDirectoryList() {
+    async function getDirectoryList(requestPath) {
         const uri = "http://localhost:1323"
-        const path = "/dir-list"
-        let dirData
+        const routePath = "/dir-list"
 
-        const r = await fetch(uri + path)
+        const r = await fetch(uri + routePath, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: requestPath })
+        })
+
         if (r.ok) {
             const data = await r.json()
 
@@ -26,17 +38,62 @@
             currentPath.innerHTML = data["full-path"]
 
             const files = document.getElementById("files")
+            files.innerHTML = ""
+
+            console.log(files)
+
+            let currentDir = document.createElement("p")
+            currentDir.innerHTML = "<a onclick='getDirectoryList(\"" + data["full-path"] + "\")'>.</a>"
+            files.appendChild(currentDir)
+            currentParent = document.createElement("p")
+            currentParent.innerHTML = "<a onclick='getDirectoryList(\"" + data["full-path"] + "/..\")'>..</a>"
+            files.appendChild(currentParent)
+
             for (const file of data.files) {
                 const p = document.createElement("p")
-                p.innerText = file.name + " / " + file.type + " / " + file.size + " / " + file.datetime
+                let ftype = file.type
+                if (file.isdir) { ftype = "directory" }
+
+                p.innerText = file.name + " / " + ftype + " / " + file.size + " / " + file.datetime
+                if (ftype == "directory") {
+                    p.innerHTML = "<a onclick='getDirectoryList(\"" + data["full-path"] + "/" + file.name + "\")'>" + p.innerText + "</a>"
+                }
+
                 files.appendChild(p)
             }
 
-            dirData = data
+            const dirData = data
+            console.log(dirData)
         } else {
             console.log("Error: " + r.status)
         }
     }
+
+    getDirectoryList(".")
 </script>
+
+<style>
+    body {
+        font-family: sans-serif;
+    }
+
+    #dir-container {
+        clear: both;
+    }
+
+    #current-path {
+        font-weight: bold;
+    }
+
+    #directories {
+        float: left;
+        min-width: 1rem;
+    }
+
+    #files {
+        float: right;
+        min-width: 2rem;
+    }
+</style>
 
 </html>

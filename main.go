@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,6 +16,10 @@ import (
 
 	"gopkg.in/guregu/null.v4"
 )
+
+type PathRequest struct {
+	Path string `json:"path"`
+}
 
 type FilePath struct {
 	Path  null.String `json:"path"`
@@ -149,6 +154,8 @@ func GetDirectoryList(path string, target, order int) (FileList, error) {
 		Files:    []FileInfo{},
 	}
 
+	log.Println(path)
+
 	// path, _ := os.Getwd()
 	// path := "../"
 
@@ -164,7 +171,7 @@ func GetDirectoryList(path string, target, order int) (FileList, error) {
 		return result, err
 	}
 
-	result.FullPath = null.StringFrom(absPath)
+	result.FullPath = null.StringFrom(filepath.ToSlash(absPath))
 
 	files, err = Dir(absPath, target, order)
 
@@ -193,10 +200,18 @@ func GetDirectoryList(path string, target, order int) (FileList, error) {
 }
 
 func DirectoryList(c echo.Context) error {
+	pathRequest := new(PathRequest)
+
+	if err := c.Bind(pathRequest); err != nil {
+		r := make(map[string]interface{})
+		r["msg"] = "Wrong request"
+		return c.JSON(http.StatusOK, r)
+	}
+
 	// fList, err := GetDirectoryList("..", NAME, DESC)
 	// fList, err := GetDirectoryList("..", TYPE, ASC)
 	// fList, err := GetDirectoryList("..", SIZE, ASC)
-	fList, err := GetDirectoryList("..", NAME, ASC)
+	fList, err := GetDirectoryList(pathRequest.Path, NAME, ASC)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -208,6 +223,6 @@ func main() {
 	e := echo.New()
 	e.Use(middleware.CORS())
 
-	e.GET("/dir-list", DirectoryList)
+	e.POST("/dir-list", DirectoryList)
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 }

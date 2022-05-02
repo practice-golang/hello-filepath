@@ -40,8 +40,6 @@
             const files = document.getElementById("files")
             files.innerHTML = ""
 
-            console.log(files)
-
             let currentDir = document.createElement("p")
             currentDir.innerHTML = "<a onclick='getDirectoryList(\"" + data["full-path"] + "\")'>.</a>"
             files.appendChild(currentDir)
@@ -63,7 +61,6 @@
             }
 
             const dirData = data
-            console.log(dirData)
         } else {
             console.log("Error: " + r.status)
         }

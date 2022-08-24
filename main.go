@@ -58,38 +58,6 @@ const (
 	DESC    // descending
 )
 
-var pathMAC = []string{
-	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-	"/Applications/Chromium.app/Contents/MacOS/Chromium",
-	"/usr/bin/google-chrome-stable",
-	"/usr/bin/google-chrome",
-	"/usr/bin/chromium",
-	"/usr/bin/chromium-browser",
-	"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-}
-
-var pathWIN = []string{
-	os.Getenv("LocalAppData") + "/Google/Chrome/Application/chrome.exe",
-	os.Getenv("ProgramFiles") + "/Google/Chrome/Application/chrome.exe",
-	os.Getenv("ProgramFiles(x86)") + "/Google/Chrome/Application/chrome.exe",
-	os.Getenv("LocalAppData") + "/Chromium/Application/chrome.exe",
-	os.Getenv("ProgramFiles") + "/Chromium/Application/chrome.exe",
-	os.Getenv("ProgramFiles(x86)") + "/Chromium/Application/chrome.exe",
-	os.Getenv("ProgramFiles(x86)") + "/Microsoft/Edge/Application/msedge.exe",
-	os.Getenv("ProgramFiles") + "/Microsoft/Edge/Application/msedge.exe",
-}
-
-var pathLIN = []string{
-	"/usr/bin/google-chrome-stable",
-	"/usr/bin/google-chrome",
-	"/usr/bin/chromium",
-	"/usr/bin/chromium-browser",
-	"/snap/bin/chromium",
-	"/usr/bin/microsoft-edge-stable",
-	"/usr/bin/microsoft-edge",
-	"/usr/bin/microsoft-edge-beta",
-}
-
 func sortByName(a, b fs.FileInfo) bool {
 	switch true {
 	case a.IsDir() && !b.IsDir():

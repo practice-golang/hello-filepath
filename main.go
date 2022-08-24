@@ -1,12 +1,19 @@
 package main // import "hello-filepath"
 
 import (
+	"context"
+	_ "embed"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
+	"log"
+	"syscall"
+	"time"
+
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -15,6 +22,9 @@ import (
 
 	"gopkg.in/guregu/null.v4"
 )
+
+//go:embed index.html
+var index []byte
 
 type PathRequest struct {
 	Path string `json:"path"`
@@ -51,6 +61,38 @@ const (
 	ASC     // ascending
 	DESC    // descending
 )
+
+var pathMAC = []string{
+	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+	"/Applications/Chromium.app/Contents/MacOS/Chromium",
+	"/usr/bin/google-chrome-stable",
+	"/usr/bin/google-chrome",
+	"/usr/bin/chromium",
+	"/usr/bin/chromium-browser",
+	"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+}
+
+var pathWIN = []string{
+	os.Getenv("LocalAppData") + "/Google/Chrome/Application/chrome.exe",
+	os.Getenv("ProgramFiles") + "/Google/Chrome/Application/chrome.exe",
+	os.Getenv("ProgramFiles(x86)") + "/Google/Chrome/Application/chrome.exe",
+	os.Getenv("LocalAppData") + "/Chromium/Application/chrome.exe",
+	os.Getenv("ProgramFiles") + "/Chromium/Application/chrome.exe",
+	os.Getenv("ProgramFiles(x86)") + "/Chromium/Application/chrome.exe",
+	os.Getenv("ProgramFiles(x86)") + "/Microsoft/Edge/Application/msedge.exe",
+	os.Getenv("ProgramFiles") + "/Microsoft/Edge/Application/msedge.exe",
+}
+
+var pathLIN = []string{
+	"/usr/bin/google-chrome-stable",
+	"/usr/bin/google-chrome",
+	"/usr/bin/chromium",
+	"/usr/bin/chromium-browser",
+	"/snap/bin/chromium",
+	"/usr/bin/microsoft-edge-stable",
+	"/usr/bin/microsoft-edge",
+	"/usr/bin/microsoft-edge-beta",
+}
 
 func sortByName(a, b fs.FileInfo) bool {
 	switch true {
@@ -97,43 +139,50 @@ func sortByTime(a, b fs.FileInfo) bool {
 	return a.ModTime().Format("20060102150405") < b.ModTime().Format("20060102150405")
 }
 
-func Dir(path string, sortby, direction int) ([]fs.FileInfo, error) {
-	files, err := ioutil.ReadDir(path)
+func Dir(path string, sortby, direction int) ([]fs.DirEntry, error) {
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
 
 	if sortby > 1 && sortby < 6 {
 		sort.Slice(files, func(a, b int) bool {
+			var fa, fb os.FileInfo
+
+			fa, _ = files[a].Info()
+			fb, _ = files[b].Info()
+
 			switch sortby {
 			case NAME:
 				if direction == DESC {
 					if (files[a].IsDir() && !files[b].IsDir()) || (!files[a].IsDir() && files[b].IsDir()) {
-						return sortByName(files[a], files[b])
+						return sortByName(fa, fb)
 					} else {
-						return !sortByName(files[a], files[b])
+						return !sortByName(fa, fb)
 					}
 				}
-				return sortByName(files[a], files[b])
+
+				return sortByName(fa, fb)
 			case TYPE:
 				if direction == DESC {
+
 					if (files[a].IsDir() && !files[b].IsDir()) || (!files[a].IsDir() && files[b].IsDir()) {
-						return sortByType(files[a], files[b])
+						return sortByType(fa, fb)
 					} else {
-						return !sortByType(files[a], files[b])
+						return !sortByType(fa, fb)
 					}
 				}
-				return sortByType(files[a], files[b])
+				return sortByType(fa, fb)
 			case SIZE:
 				if direction == DESC {
-					return !sortBySize(files[a], files[b])
+					return !sortBySize(fa, fb)
 				}
-				return sortBySize(files[a], files[b])
+				return sortBySize(fa, fb)
 			case TIME:
 				if direction == DESC {
-					return !sortByTime(files[a], files[b])
+					return !sortByTime(fa, fb)
 				}
-				return sortByTime(files[a], files[b])
+				return sortByTime(fa, fb)
 			default:
 				return false
 			}
@@ -145,7 +194,7 @@ func Dir(path string, sortby, direction int) ([]fs.FileInfo, error) {
 
 func GetDirectoryList(path string, target, order int) (FileList, error) {
 	var err error
-	var files []fs.FileInfo = []fs.FileInfo{}
+	var files []fs.DirEntry = []fs.DirEntry{}
 
 	result := FileList{
 		Path:     null.StringFrom(path),
@@ -181,12 +230,15 @@ func GetDirectoryList(path string, target, order int) (FileList, error) {
 		if len(ext) > 0 {
 			ext = ext[1:]
 		}
+
+		finfo, _ := file.Info()
+
 		fileInfo := FileInfo{
 			Name:     null.StringFrom(file.Name()),
 			Type:     null.StringFrom(ext),
-			Size:     null.IntFrom(file.Size()),
-			DateTime: null.StringFrom(file.ModTime().Format("2006-01-02 15:04:05")),
-			DTTM:     null.StringFrom(file.ModTime().Format("20060102150405")),
+			Size:     null.IntFrom(finfo.Size()),
+			DateTime: null.StringFrom(finfo.ModTime().Format("2006-01-02 15:04:05")),
+			DTTM:     null.StringFrom(finfo.ModTime().Format("20060102150405")),
 			IsDir:    null.BoolFrom(file.IsDir()),
 		}
 
@@ -217,9 +269,89 @@ func DirectoryList(c echo.Context) error {
 }
 
 func main() {
+	chromePaths := []string{}
+	chromePath := ""
+
+	switch runtime.GOOS {
+	case "windows":
+		chromePaths = pathWIN
+	case "linux":
+		chromePaths = pathLIN
+	case "darwin":
+		chromePaths = pathMAC
+	default:
+		panic("Unknown OS")
+	}
+
+	for _, p := range chromePaths {
+		if _, err := os.Stat(p); err == nil {
+			chromePath = p
+			break
+		}
+	}
+
 	e := echo.New()
+	e.HideBanner = true
 	e.Use(middleware.CORS())
 
+	if chromePath == "" {
+		panic("Chrome not found")
+	}
+	fmt.Println("Chrome path: " + chromePath)
+
+	e.GET("/", func(c echo.Context) error {
+		return c.HTML(http.StatusOK, string(index))
+	})
 	e.POST("/dir-list", DirectoryList)
+
+	go func() {
+		cmd := exec.Command(
+			chromePath,
+			"--window-size=800,600",
+			"--app=http://localhost:1323",
+			"--ash-force-desktop",
+		)
+
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Run()
+		cmd.Wait()
+
+		// cmd.Stdout = os.Stdout
+		// cmd.Stderr = os.Stderr
+		// err := cmd.Start()
+		// if err != nil {
+		// 	fmt.Println("WTF", err)
+		// }
+
+		log.Println(cmd.Process.Pid)
+		log.Println(cmd.ProcessState.Exited())
+		_, err := os.FindProcess(cmd.Process.Pid)
+		if err != nil {
+			log.Println("Process not found")
+		}
+
+		// if err := cmd.Wait(); err != nil {
+		// 	if exiterr, ok := err.(*exec.ExitError); ok {
+		// 		if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+		// 			log.Printf("Exit Status: %d", status.ExitStatus())
+		// 		}
+		// 	} else {
+		// 		log.Fatalf("cmd.Wait: %v", err)
+		// 	}
+		// }
+
+		log.Println("Must hold here, not work :-p")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := e.Shutdown(ctx); err != nil {
+			e.Logger.Fatal(err)
+		}
+	}()
+
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 }

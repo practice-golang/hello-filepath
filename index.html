@@ -1,20 +1,21 @@
-<html>
+<html lang="ko">
 
 <head>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
 </head>
 
 <body>
-    <button onclick="getDirectoryList()">Get directory list</button>
+    <!-- <button type="button" onclick="getDirectoryList()">Get directory list</button> -->
 
     <div id="current-path"></div>
+    <br />
     <div id="dir-container">
-        <div id="directories">
+        <!-- <div id="directories">
             <p>a</p>
             <p>a</p>
-            <p>a</p>
-            <p>a</p>
-        </div>
+        </div> -->
         <div id="files"></div>
     </div>
 
@@ -70,27 +71,11 @@
 </script>
 
 <style>
-    body {
-        font-family: sans-serif;
-    }
-
-    #dir-container {
-        clear: both;
-    }
-
-    #current-path {
-        font-weight: bold;
-    }
-
-    #directories {
-        float: left;
-        min-width: 1rem;
-    }
-
-    #files {
-        float: right;
-        min-width: 2rem;
-    }
+ body { font-family: sans-serif; }
+ #dir-container { clear: both; }
+ #current-path { font-weight: bold; }
+ #directories { float: left; min-width: 1rem; }
+ #files { float: left; min-width: 2rem;}
 </style>
 
 </html>

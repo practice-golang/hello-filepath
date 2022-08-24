@@ -1,24 +1,20 @@
 package main // import "hello-filepath"
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"io/fs"
 	"log"
-	"syscall"
-	"time"
 
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/practice-golang/lorca"
 
 	"gopkg.in/guregu/null.v4"
 )
@@ -268,90 +264,66 @@ func DirectoryList(c echo.Context) error {
 	return c.JSON(http.StatusOK, fList)
 }
 
-func main() {
-	chromePaths := []string{}
-	chromePath := ""
-
-	switch runtime.GOOS {
-	case "windows":
-		chromePaths = pathWIN
-	case "linux":
-		chromePaths = pathLIN
-	case "darwin":
-		chromePaths = pathMAC
-	default:
-		panic("Unknown OS")
-	}
-
-	for _, p := range chromePaths {
-		if _, err := os.Stat(p); err == nil {
-			chromePath = p
-			break
-		}
-	}
-
+func initEcho() {
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(middleware.CORS())
-
-	if chromePath == "" {
-		panic("Chrome not found")
-	}
-	fmt.Println("Chrome path: " + chromePath)
 
 	e.GET("/", func(c echo.Context) error {
 		return c.HTML(http.StatusOK, string(index))
 	})
 	e.POST("/dir-list", DirectoryList)
 
-	go func() {
-		cmd := exec.Command(
-			chromePath,
-			"--window-size=800,600",
-			"--app=http://localhost:1323",
-			"--ash-force-desktop",
-		)
-
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Run()
-		cmd.Wait()
-
-		// cmd.Stdout = os.Stdout
-		// cmd.Stderr = os.Stderr
-		// err := cmd.Start()
-		// if err != nil {
-		// 	fmt.Println("WTF", err)
-		// }
-
-		log.Println(cmd.Process.Pid)
-		log.Println(cmd.ProcessState.Exited())
-		_, err := os.FindProcess(cmd.Process.Pid)
-		if err != nil {
-			log.Println("Process not found")
-		}
-
-		// if err := cmd.Wait(); err != nil {
-		// 	if exiterr, ok := err.(*exec.ExitError); ok {
-		// 		if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-		// 			log.Printf("Exit Status: %d", status.ExitStatus())
-		// 		}
-		// 	} else {
-		// 		log.Fatalf("cmd.Wait: %v", err)
-		// 	}
-		// }
-
-		log.Println("Must hold here, not work :-p")
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := e.Shutdown(ctx); err != nil {
-			e.Logger.Fatal(err)
-		}
-	}()
-
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
+}
+
+func initLorca() {
+	cwd, _ := os.Getwd()
+	profilePath := cwd + `\profile`
+
+	lorca.DefaultChromeArgs = []string{
+		"--disable-background-networking",
+		"--disable-background-timer-throttling",
+		"--disable-backgrounding-occluded-windows",
+		"--disable-breakpad",
+		"--disable-client-side-phishing-detection",
+		"--disable-default-apps",
+		"--disable-dev-shm-usage",
+		"--disable-infobars",
+		"--disable-extensions",
+		"--disable-features=site-per-process",
+		"--disable-hang-monitor",
+		"--disable-ipc-flooding-protection",
+		"--disable-popup-blocking",
+		"--disable-prompt-on-repost",
+		"--disable-renderer-backgrounding",
+		"--disable-sync",
+		"--disable-translate",
+		// "--disable-windows10-custom-titlebar",
+		"--metrics-recording-only",
+		// "--no-first-run",
+		"--no-default-browser-check",
+		"--safebrowsing-disable-auto-update",
+		// "--enable-automation",
+		"--password-store=basic",
+		"--use-mock-keychain",
+	}
+
+	// args := []string{"--ash-force-desktop", "--force-app-mode"}
+	args := []string{}
+
+	ui, err := lorca.New("http://localhost:1323", profilePath, 1024, 768, args...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ui.Close()
+
+	<-ui.Done()
+
+	os.RemoveAll(cwd + `/profile`)
+}
+
+func main() {
+	go func() { initEcho() }()
+	initLorca()
 }

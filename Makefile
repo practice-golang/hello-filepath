@@ -1,2 +1,2 @@
 build:
-	go build -ldflags -H=windowsgui -o bin/
+	go build -ldflags "-w -s -H windowsgui" -o bin/

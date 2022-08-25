@@ -108,7 +108,7 @@ func Dir(path string, sortby, direction int) ([]fs.DirEntry, error) {
 	return files, nil
 }
 
-func GetDirectoryList(path string, target, order int) (FileList, error) {
+func GetFileList(path string, target, order int) (FileList, error) {
 	var err error
 	var files []fs.DirEntry = []fs.DirEntry{}
 

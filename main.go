@@ -17,6 +17,9 @@ import (
 //go:embed index.html
 var index []byte
 
+//go:embed logo.png
+var logo []byte
+
 func initEcho() {
 	e := echo.New()
 	e.HideBanner = true
@@ -25,7 +28,11 @@ func initEcho() {
 	e.GET("/", func(c echo.Context) error {
 		return c.HTML(http.StatusOK, string(index))
 	})
-	e.POST("/dir-list", DirectoryList)
+	e.GET("/logo.png", func(c echo.Context) error {
+		return c.HTML(http.StatusOK, string(logo))
+	})
+
+	e.POST("/file-list", getFileList)
 
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 }
@@ -76,7 +83,7 @@ func initLorca() {
 	os.RemoveAll(cwd + `/profile`)
 }
 
-func DirectoryList(c echo.Context) error {
+func getFileList(c echo.Context) error {
 	pathRequest := new(dir.PathRequest)
 
 	if err := c.Bind(pathRequest); err != nil {
@@ -88,7 +95,7 @@ func DirectoryList(c echo.Context) error {
 	// fList, err := GetDirectoryList("..", NAME, DESC)
 	// fList, err := GetDirectoryList("..", TYPE, ASC)
 	// fList, err := GetDirectoryList("..", SIZE, ASC)
-	fList, err := dir.GetDirectoryList(pathRequest.Path, dir.NAME, dir.ASC)
+	fList, err := dir.GetFileList(pathRequest.Path, dir.NAME, dir.ASC)
 	if err != nil {
 		fmt.Println(err)
 	}

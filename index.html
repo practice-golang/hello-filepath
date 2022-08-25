@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="logo.png">
     <title>Files</title>
 </head>
 
@@ -12,21 +13,28 @@
     <div id="current-path"></div>
     <br />
     <div id="dir-container">
-        <!-- <div id="directories">
+        <div id="directories">
             <p>a</p>
             <p>a</p>
-        </div> -->
+            <p>a</p>
+            <p>a</p>
+            <p>a</p>
+            <p>a</p>
+            <p>a</p>
+            <p>a</p>
+            <p>a</p>
+            <p>a</p>
+        </div>
         <div id="files"></div>
     </div>
 
 </body>
 
 <script>
-    async function getDirectoryList(requestPath) {
-        const uri = "http://localhost:1323"
-        const routePath = "/dir-list"
+    async function getFileList(requestPath) {
+        const uri = `http://localhost:1323/file-list`
 
-        const r = await fetch(uri + routePath, {
+        const r = await fetch(uri, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ path: requestPath })
@@ -41,10 +49,11 @@
             const files = document.getElementById("files")
             files.innerHTML = ""
 
-            let currentDir = document.createElement("p")
+            const currentDir = document.createElement("p")
             currentDir.innerHTML = "<a onclick='getDirectoryList(\"" + data["full-path"] + "\")'>.</a>"
             files.appendChild(currentDir)
-            currentParent = document.createElement("p")
+
+            const currentParent = document.createElement("p")
             currentParent.innerHTML = "<a onclick='getDirectoryList(\"" + data["full-path"] + "/..\")'>..</a>"
             files.appendChild(currentParent)
 
@@ -67,7 +76,7 @@
         }
     }
 
-    getDirectoryList(".")
+    getFileList(".")
 </script>
 
 <style>

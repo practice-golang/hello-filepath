@@ -1,4 +1,4 @@
-package main
+package dir
 
 import (
 	"io/fs"
@@ -146,11 +146,9 @@ func Test_getDir(t *testing.T) {
 			direction: ASC,
 		},
 		want: []fs.FileInfo{
-			MockFileInfo{FileName: ".git", IsDirectory: true},
-			MockFileInfo{FileName: "bin", IsDirectory: true},
-			MockFileInfo{FileName: ".gitignore", IsDirectory: false},
-			MockFileInfo{FileName: "go.mod", IsDirectory: false},
-			MockFileInfo{FileName: "go.sum", IsDirectory: false},
+			MockFileInfo{FileName: "dir.go", IsDirectory: true},
+			MockFileInfo{FileName: "dir_test.go", IsDirectory: true},
+			MockFileInfo{FileName: "model.go", IsDirectory: true},
 		},
 	})
 
@@ -162,11 +160,9 @@ func Test_getDir(t *testing.T) {
 			direction: DESC,
 		},
 		want: []fs.FileInfo{
-			MockFileInfo{FileName: "bin", IsDirectory: true},
-			MockFileInfo{FileName: ".git", IsDirectory: true},
-			MockFileInfo{FileName: "request.http", IsDirectory: false},
-			MockFileInfo{FileName: "README.md", IsDirectory: false},
-			MockFileInfo{FileName: "Makefile", IsDirectory: false},
+			MockFileInfo{FileName: "model.go", IsDirectory: true},
+			MockFileInfo{FileName: "dir_test.go", IsDirectory: true},
+			MockFileInfo{FileName: "dir.go", IsDirectory: true},
 		},
 	})
 
@@ -178,11 +174,9 @@ func Test_getDir(t *testing.T) {
 			direction: ASC,
 		},
 		want: []fs.FileInfo{
-			MockFileInfo{FileName: ".git", IsDirectory: true},
-			MockFileInfo{FileName: "bin", IsDirectory: true},
-			MockFileInfo{FileName: ".gitignore", IsDirectory: false},
-			MockFileInfo{FileName: "README.md", IsDirectory: false},
-			MockFileInfo{FileName: "Makefile", IsDirectory: false},
+			MockFileInfo{FileName: "model.go", IsDirectory: true},
+			MockFileInfo{FileName: "dir.go", IsDirectory: true},
+			MockFileInfo{FileName: "dir_test.go", IsDirectory: true},
 		},
 	})
 
@@ -194,19 +188,15 @@ func Test_getDir(t *testing.T) {
 			direction: DESC,
 		},
 		want: []fs.FileInfo{
-			MockFileInfo{FileName: "main.go", IsDirectory: false},
-			MockFileInfo{FileName: "main_test.go", IsDirectory: false},
-			MockFileInfo{FileName: "go.sum", IsDirectory: false},
-			MockFileInfo{FileName: "index.html", IsDirectory: false},
-			MockFileInfo{FileName: "go.mod", IsDirectory: false},
+			MockFileInfo{FileName: "dir_test.go", IsDirectory: true},
+			MockFileInfo{FileName: "dir.go", IsDirectory: true},
+			MockFileInfo{FileName: "model.go", IsDirectory: true},
 		},
 	})
 
 	t1, _ := time.Parse(time.RFC3339, "2022-08-18T22:08:41+00:00")
 	t2 := t1.AddDate(0, 0, 1)
 	t3 := t1.AddDate(0, 0, 1)
-	t4 := t1.AddDate(0, 0, 1)
-	t5 := t1.AddDate(0, 0, 1)
 
 	tests = append(tests, testInst{
 		name: "Test_getDir_time_asc",
@@ -216,11 +206,9 @@ func Test_getDir(t *testing.T) {
 			direction: ASC,
 		},
 		want: []fs.FileInfo{
-			MockFileInfo{FileName: ".gitignore", IsDirectory: false, CreateModifyTime: t3},
-			MockFileInfo{FileName: "request.http", IsDirectory: false, CreateModifyTime: t5},
-			MockFileInfo{FileName: "README.md", IsDirectory: false, CreateModifyTime: t4},
-			MockFileInfo{FileName: "go.mod", IsDirectory: true, CreateModifyTime: t1},
-			MockFileInfo{FileName: "go.sum", IsDirectory: true, CreateModifyTime: t2},
+			MockFileInfo{FileName: "model.go", IsDirectory: true, CreateModifyTime: t1},
+			MockFileInfo{FileName: "dir.go", IsDirectory: true, CreateModifyTime: t2},
+			MockFileInfo{FileName: "dir_test.go", IsDirectory: true, CreateModifyTime: t3},
 		},
 	})
 
@@ -232,11 +220,9 @@ func Test_getDir(t *testing.T) {
 			direction: DESC,
 		},
 		want: []fs.FileInfo{
-			MockFileInfo{FileName: "main_test.go", IsDirectory: false, CreateModifyTime: t1},
-			MockFileInfo{FileName: "Makefile", IsDirectory: true, CreateModifyTime: t5},
-			MockFileInfo{FileName: ".git", IsDirectory: true, CreateModifyTime: t4},
-			MockFileInfo{FileName: "bin", IsDirectory: true, CreateModifyTime: t3},
-			MockFileInfo{FileName: "main.go", IsDirectory: false, CreateModifyTime: t2},
+			MockFileInfo{FileName: "dir_test.go", IsDirectory: true, CreateModifyTime: t3},
+			MockFileInfo{FileName: "dir.go", IsDirectory: true, CreateModifyTime: t2},
+			MockFileInfo{FileName: "model.go", IsDirectory: true, CreateModifyTime: t1},
 		},
 	})
 

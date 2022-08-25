@@ -19,12 +19,9 @@ type FileInfo struct {
 	DateTime null.String `json:"datetime"`
 	DTTM     null.String `json:"dttm"`
 	IsDir    null.Bool   `json:"isdir"`
-}
-
-type FileList struct {
 	Path     null.String `json:"path"`
 	FullPath null.String `json:"full-path"`
-	Files    []FileInfo  `json:"files"`
+	Children []FileInfo  `json:"children"`
 }
 
 const (

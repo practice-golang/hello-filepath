@@ -20,6 +20,43 @@ var index []byte
 //go:embed logo.png
 var logo []byte
 
+func getFiles(c echo.Context) error {
+	pathRequest := new(dir.PathRequest)
+
+	if err := c.Bind(pathRequest); err != nil {
+		r := make(map[string]interface{})
+		r["msg"] = "Wrong request"
+		return c.JSON(http.StatusOK, r)
+	}
+
+	// flist, err := GetDirectoryList("..", NAME, DESC)
+	// flist, err := GetDirectoryList("..", TYPE, ASC)
+	// flist, err := GetDirectoryList("..", SIZE, ASC)
+	flist, err := dir.GetFileList(pathRequest.Path, dir.NAME, dir.ASC)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return c.JSON(http.StatusOK, flist)
+}
+
+func getDirectories(c echo.Context) error {
+	pathRequest := new(dir.PathRequest)
+
+	if err := c.Bind(pathRequest); err != nil {
+		r := make(map[string]interface{})
+		r["msg"] = "Wrong request"
+		return c.JSON(http.StatusOK, r)
+	}
+
+	dlist, err := dir.GetVisibleDirectories(pathRequest.Path, dir.NAME, dir.ASC)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return c.JSON(http.StatusOK, dlist)
+}
+
 func initEcho() {
 	e := echo.New()
 	e.HideBanner = true
@@ -32,7 +69,8 @@ func initEcho() {
 		return c.HTML(http.StatusOK, string(logo))
 	})
 
-	e.POST("/file-list", getFileList)
+	e.POST("/files", getFiles)
+	e.POST("/dir-upstream", getDirectories)
 
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 }
@@ -81,26 +119,6 @@ func initLorca() {
 	<-ui.Done()
 
 	os.RemoveAll(cwd + `/profile`)
-}
-
-func getFileList(c echo.Context) error {
-	pathRequest := new(dir.PathRequest)
-
-	if err := c.Bind(pathRequest); err != nil {
-		r := make(map[string]interface{})
-		r["msg"] = "Wrong request"
-		return c.JSON(http.StatusOK, r)
-	}
-
-	// fList, err := GetDirectoryList("..", NAME, DESC)
-	// fList, err := GetDirectoryList("..", TYPE, ASC)
-	// fList, err := GetDirectoryList("..", SIZE, ASC)
-	fList, err := dir.GetFileList(pathRequest.Path, dir.NAME, dir.ASC)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	return c.JSON(http.StatusOK, fList)
 }
 
 func main() {

@@ -1,9 +1,17 @@
 @uri=http://localhost:1323
 
-### Get directory list
-POST {{uri}}/dir-list HTTP/1.1
+### Get files in the directory
+POST {{uri}}/files HTTP/1.1
 content-type: application/json
 
 {
     "path": ".."
+}
+
+### Get directory tree from root to current directory
+POST {{uri}}/dir-upstream HTTP/1.1
+content-type: application/json
+
+{
+    "path": "."
 }

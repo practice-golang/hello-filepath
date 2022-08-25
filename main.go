@@ -14,19 +14,22 @@ import (
 	"github.com/practice-golang/lorca"
 )
 
-//go:embed index.html
+//go:embed assets/index.html
 var index []byte
 
-//go:embed logo.png
+//go:embed assets/logo.png
 var logo []byte
 
 func getFiles(c echo.Context) error {
 	pathRequest := new(dir.PathRequest)
 
 	if err := c.Bind(pathRequest); err != nil {
-		r := make(map[string]interface{})
-		r["msg"] = "Wrong request"
-		return c.JSON(http.StatusOK, r)
+		r := map[string]string{
+			"result":  "error",
+			"message": "Wrong request",
+		}
+
+		return c.JSON(http.StatusBadRequest, r)
 	}
 
 	// flist, err := GetDirectoryList("..", NAME, DESC)
@@ -34,7 +37,14 @@ func getFiles(c echo.Context) error {
 	// flist, err := GetDirectoryList("..", SIZE, ASC)
 	flist, err := dir.GetFileList(pathRequest.Path, dir.NAME, dir.ASC)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("GetFileList:", err)
+
+		resultError := map[string]string{
+			"result":  "error",
+			"message": err.Error(),
+		}
+
+		return c.JSON(http.StatusOK, resultError)
 	}
 
 	return c.JSON(http.StatusOK, flist)
@@ -44,14 +54,24 @@ func getDirectories(c echo.Context) error {
 	pathRequest := new(dir.PathRequest)
 
 	if err := c.Bind(pathRequest); err != nil {
-		r := make(map[string]interface{})
-		r["msg"] = "Wrong request"
-		return c.JSON(http.StatusOK, r)
+		r := map[string]string{
+			"result":  "error",
+			"message": "Wrong request",
+		}
+
+		return c.JSON(http.StatusBadRequest, r)
 	}
 
 	dlist, err := dir.GetVisibleDirectories(pathRequest.Path, dir.NAME, dir.ASC)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("GetVisibleDirectories:", err)
+
+		resultError := map[string]string{
+			"result":  "error",
+			"message": err.Error(),
+		}
+
+		return c.JSON(http.StatusOK, resultError)
 	}
 
 	return c.JSON(http.StatusOK, dlist)

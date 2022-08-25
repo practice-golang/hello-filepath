@@ -32,6 +32,13 @@
 
         if (r.ok) {
             const data = await r.json()
+            
+            if (data["result"] == "error") {
+                const files = document.getElementById("files")
+                files.innerHTML = data["message"]
+
+                return false
+            }
 
             const currentPath = document.getElementById("current-path")
             currentPath.innerHTML = data["full-path"]
@@ -67,14 +74,14 @@
     function showDirectoryTree(data, depth) {
         let nbsp = ""
         for (let i = 0; i < depth; i++) {
-            nbsp += "*"
+            nbsp += "&nbsp;&nbsp;&nbsp;&nbsp;"
         }
 
         for (let d of data.children) {
-            console.log(d, d.name, d["full-path"])
-
             const p = document.createElement("p")
-            p.innerText = nbsp + d.name
+            // p.innerText = nbsp + d.name
+            p.innerHTML = "<a onclick='getFileList(\"" + d["full-path"] + "\")'>" + d.name + "</a>"
+
             document.getElementById("directories").appendChild(p)
 
             if (d.children != null && d.children.length > 0) { showDirectoryTree(d, ++depth) }
@@ -104,26 +111,42 @@
 </script>
 
 <style>
-    body {
-        font-family: sans-serif;
+    html,
+    body,
+    div {
+        padding: 0;
+        margin: 0;
     }
 
-    #dir-container {
-        clear: both;
+    div {
+        float: left;
     }
 
     #current-path {
+        height: 5vh;
         font-weight: bold;
+    }
+
+    #dir-container {
+        width: 100vw;
+        height: 95vh;
+        background-color: blanchedalmond;
     }
 
     #directories {
         float: left;
-        min-width: 1rem;
+        width: calc(30vw - 10px);
+        height: 100%;
+        padding-left: 10px;
+        overflow-y: auto;
     }
 
     #files {
         float: left;
-        min-width: 2rem;
+        width: calc(70vw - 10px);
+        height: 100%;
+        padding-left: 10px;
+        overflow-y: auto;
     }
 </style>
 

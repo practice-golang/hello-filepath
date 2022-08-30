@@ -169,8 +169,8 @@ func GetFileList(path string, target, order int) (FileInfo, error) {
 
 func findUpstreamDirectories(cwd FileInfo, target, order int) (FileInfo, error) {
 	var err error
-
 	errHereIsRoot := errors.New("here is root")
+
 	parentPath := filepath.ToSlash(filepath.Dir(cwd.FullPath.String))
 
 	if parentPath == cwd.FullPath.String {
@@ -221,6 +221,7 @@ func findUpstreamDirectories(cwd FileInfo, target, order int) (FileInfo, error) 
 
 func GetVisibleDirectories(path string, target, order int) (FileInfo, error) {
 	var err error
+	errHereIsRoot := errors.New("here is root")
 
 	cwd := FileInfo{
 		Path:     null.StringFrom(path),
@@ -247,6 +248,18 @@ func GetVisibleDirectories(path string, target, order int) (FileInfo, error) {
 
 	uplist, err := findUpstreamDirectories(cwd, target, order)
 	if err != nil {
+		if err.Error() == errHereIsRoot.Error() {
+			root := FileInfo{
+				Name:     null.StringFrom(filepath.Base(cwd.Name.String)),
+				Path:     null.StringFrom(cwd.Name.String),
+				FullPath: null.StringFrom(""),
+				Children: []FileInfo{},
+			}
+			root.Children, _ = GetChildDirectories(cwd.Name.String, target, order)
+
+			return root, nil
+		}
+
 		return cwd, err
 	}
 

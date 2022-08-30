@@ -21,57 +21,11 @@
 </body>
 
 <script>
-    async function getFileList(requestPath) {
-        const uri = `http://localhost:1323/files`
+    let cwd = "" // current working directory
 
-        const r = await fetch(uri, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ path: requestPath })
-        })
+    async function showDirectoryTree(data, depth) {
+        const directories = document.getElementById("directories")
 
-        if (r.ok) {
-            const data = await r.json()
-            
-            if (data["result"] == "error") {
-                const files = document.getElementById("files")
-                files.innerHTML = data["message"]
-
-                return false
-            }
-
-            const currentPath = document.getElementById("current-path")
-            currentPath.innerHTML = data["full-path"]
-
-            const files = document.getElementById("files")
-            files.innerHTML = ""
-
-            const currentDir = document.createElement("p")
-            currentDir.innerHTML = "<a onclick='getFileList(\"" + data["full-path"] + "\")'>.</a>"
-            files.appendChild(currentDir)
-
-            const currentParent = document.createElement("p")
-            currentParent.innerHTML = "<a onclick='getFileList(\"" + data["full-path"] + "/..\")'>..</a>"
-            files.appendChild(currentParent)
-
-            for (const file of data.children) {
-                const p = document.createElement("p")
-                let ftype = file.type
-                if (file.isdir) { ftype = "directory" }
-
-                p.innerText = file.name + " / " + ftype + " / " + file.size + " / " + file.datetime
-                if (ftype == "directory") {
-                    p.innerHTML = "<a onclick='getFileList(\"" + data["full-path"] + "/" + file.name + "\")'>" + p.innerText + "</a>"
-                }
-
-                files.appendChild(p)
-            }
-        } else {
-            console.log("Error: " + r.status)
-        }
-    }
-
-    function showDirectoryTree(data, depth) {
         let nbsp = ""
         for (let i = 0; i < depth; i++) {
             nbsp += "&nbsp;&nbsp;&nbsp;&nbsp;"
@@ -79,11 +33,13 @@
 
         for (let d of data.children) {
             const p = document.createElement("p")
-            // p.innerText = nbsp + d.name
-            p.innerHTML = "<a onclick='getFileList(\"" + d["full-path"] + "\")'>" + d.name + "</a>"
+            if (d["full-path"] == cwd) {
+                p.innerHTML = nbsp + "<b><i id='cwd' onclick='getFileList(\"" + d["full-path"] + "\")'>" + d.name + "</i></b>"
+            } else {
+                p.innerHTML = nbsp + "<a onclick='getFileList(\"" + d["full-path"] + "\")'>" + d.name + "</a>"
+            }
 
-            document.getElementById("directories").appendChild(p)
-
+            directories.appendChild(p)
             if (d.children != null && d.children.length > 0) { showDirectoryTree(d, ++depth) }
         }
     }
@@ -99,14 +55,95 @@
 
         if (r.ok) {
             const data = await r.json()
-            showDirectoryTree(data, 0)
+
+            if (data.message == "here is root") {
+
+            }
+
+            await showDirectoryTree(data, 0)
+
+            location.href = "#cwd"
         } else {
             console.log("Error: " + r.status)
         }
 
     }
 
-    getDirectoryUpstream(".")
+    async function getFileList(requestPath) {
+        const directories = document.getElementById("directories")
+        directories.innerHTML = ""
+
+        const uri = `http://localhost:1323/files`
+
+        const r = await fetch(uri, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: requestPath })
+        })
+
+        if (r.ok) {
+            const data = await r.json()
+
+            if (data["result"] == "error") {
+                const files = document.getElementById("files")
+                files.innerHTML = data["message"]
+
+                return false
+            }
+
+            const currentPath = document.getElementById("current-path")
+            currentPath.innerHTML = data["full-path"]
+
+            cwd = data["full-path"]
+            await getDirectoryUpstream(requestPath)
+
+            const files = document.getElementById("files")
+            files.innerHTML = ""
+
+            const filesTable = document.createElement("table")
+            // filesTable.setAttribute("border", "1")
+            // filesTable.setAttribute("cellspacing", "0")
+            // filesTable.setAttribute("cellpadding", "5")
+            filesTable.setAttribute("style", "width:100%")
+            filesTable.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Name</th><th>Type</th><th>Size</th><th>Last Modified</th>
+                </tr>
+            </thead>`
+            files.appendChild(filesTable)
+
+            const currentDir = document.createElement("tr")
+            currentDir.innerHTML = `<td colspan=4>.</td>`
+            filesTable.appendChild(currentDir)
+
+            const currentParent = document.createElement("tr")
+            currentParent.setAttribute("onclick", `getFileList("${data["full-path"]}/..")`)
+            currentParent.innerHTML = `<td colspan=4>..</td>`
+            filesTable.appendChild(currentParent)
+
+            for (const file of data.children) {
+                let ftype = file.type
+                if (file.isdir) { ftype = "directory" }
+
+                const tr = document.createElement("tr")
+                tr.innerHTML = `
+                <td>${file.name}</td>
+                <td>${ftype}</td>
+                <td>${file.size}</td>
+                <td>${file.datetime}</td>`
+                if (ftype == "directory") {
+                    // tr.innerHTML = "<a onclick='getFileList(\"" + data["full-path"] + "/" + file.name + "\")'>" + tr.innerText + "</a>"
+                    tr.setAttribute("onclick", "getFileList(\"" + data["full-path"] + "/" + file.name + "\")")
+                }
+
+                filesTable.appendChild(tr)
+            }
+        } else {
+            console.log("Error: " + r.status)
+        }
+    }
+
     getFileList(".")
 </script>
 
@@ -136,6 +173,7 @@
     #directories {
         float: left;
         width: calc(30vw - 10px);
+        max-width: 300px;
         height: 100%;
         padding-left: 10px;
         overflow-y: auto;
@@ -147,6 +185,19 @@
         height: 100%;
         padding-left: 10px;
         overflow-y: auto;
+    }
+
+    #files th,
+    #files td {
+        text-align: left;
+    }
+
+    #files table tr :hover {
+        background-color: #f5f5f5;
+    }
+
+    #cwd {
+        scroll-margin-top: 50px;
     }
 </style>
 

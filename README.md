@@ -1,4 +1,6 @@
-file listing
+File, directory listing - practice lorca using
 
-## Todo
-* [ ] Dir tree
+![s-shot](/doc/screenshot.png)
+
+## License
+Public domain
